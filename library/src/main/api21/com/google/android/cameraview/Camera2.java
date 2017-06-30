@@ -438,8 +438,29 @@ class Camera2 extends CameraViewImpl {
     }
 
     protected void collectPictureSizes(SizeMap sizes, StreamConfigurationMap map) {
+        int targetWidth = 640;
+        int targetHeight = 480;
+        AspectRatio targetAspectRatio = AspectRatio.of(targetWidth, targetHeight);
+        android.util.Size bestSize = null;
+
         for (android.util.Size size : map.getOutputSizes(ImageFormat.JPEG)) {
-            mPictureSizes.add(new Size(size.getWidth(), size.getHeight()));
+            if (size.getWidth() == targetWidth && size.getHeight() == targetHeight) {
+                bestSize = size;
+                break;
+            }
+
+            boolean aspectRatioCorrect = targetAspectRatio.matches(new Size(size.getWidth(), size.getHeight()));
+            if (!aspectRatioCorrect) continue;
+
+            if (size.getWidth() >= targetWidth && size.getHeight() >= targetHeight) {
+                if (bestSize == null || size.getWidth() < bestSize.getWidth() || size.getHeight() < bestSize.getHeight()) {
+                    bestSize = size;
+                }
+            }
+        }
+
+        if (bestSize != null) {
+            mPictureSizes.add(new Size(bestSize.getWidth(), bestSize.getHeight()));
         }
     }
 
