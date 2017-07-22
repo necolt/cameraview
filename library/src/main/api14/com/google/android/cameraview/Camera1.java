@@ -321,16 +321,40 @@ class Camera1 extends CameraViewImpl {
     }
 
     void adjustCameraParameters() {
-        SortedSet<Size> sizes = mPreviewSizes.sizes(mAspectRatio);
-        if (sizes == null) { // Not supported
-            mAspectRatio = chooseAspectRatio();
-            sizes = mPreviewSizes.sizes(mAspectRatio);
-        }
-        Size size = chooseOptimalSize(sizes);
+        int targetWidth = 640;
+        int targetHeight = 480;
+        AspectRatio targetAspectRatio = AspectRatio.of(targetWidth, targetHeight);
+        SortedSet<Size> sizes = mPictureSizes.sizes(targetAspectRatio);
+        Size bestSize = null;
+        for (Size size : sizes) {
+            if (size.getWidth() == targetWidth && size.getHeight() == targetHeight) {
+                bestSize = size;
+                break;
+            }
 
-        // Always re-apply camera parameters
-        // Largest picture size in this ratio
-        final Size pictureSize = mPictureSizes.sizes(mAspectRatio).last();
+            if (size.getWidth() >= targetWidth && size.getHeight() >= targetHeight) {
+                if (bestSize == null || size.getWidth() < bestSize.getWidth() || size.getHeight() < bestSize.getHeight()) {
+                    bestSize = size;
+                }
+            }
+        }
+
+        Size size = bestSize;
+        Size pictureSize = bestSize;
+
+        if (size == null) {
+            sizes = mPreviewSizes.sizes(mAspectRatio);
+            if (sizes == null) { // Not supported
+                mAspectRatio = chooseAspectRatio();
+                sizes = mPreviewSizes.sizes(mAspectRatio);
+            }
+            size = chooseOptimalSize(sizes);
+
+            // Always re-apply camera parameters
+            // Largest picture size in this ratio
+            pictureSize = mPictureSizes.sizes(mAspectRatio).last();
+        }
+
         if (mShowingPreview) {
             mCamera.stopPreview();
         }
